@@ -1,0 +1,260 @@
+1. Instalar un entorno de desarrollo
+La mayoría de los desarrolladores de GBA usan el lenguaje C (o ASM para código de bajo nivel) y herramientas específicas. Te recomiendo lo siguiente:
+
+Herramientas clave:
+DevKitPro: Es la suite de desarrollo más popular para GBA. Incluye herramientas como devkitARM (un compilador para ARM, el procesador de la GBA) y librerías necesarias.
+Descárgalo en: https://devkitpro.org/
+Visual Studio Code o cualquier editor de texto: VS Code es una buena opción por sus extensiones para C y GBA.
+Emulador de GBA: Usa emuladores como mGBA o VisualBoyAdvance-M para probar tu juego.
+Librería libgba: Viene con DevKitPro y contiene muchas funciones útiles para manejar gráficos, sonido y hardware de la GBA.
+
+
+2. Crear un proyecto base
+Sigue estos pasos para crear tu primer proyecto:
+
+Configura DevKitPro:
+
+Instala DevKitPro siguiendo las instrucciones de su página oficial. Asegúrate de incluir el soporte para GBA.
+Usa las plantillas de proyectos que vienen con DevKitPro para comenzar rápidamente.
+Estructura básica del proyecto:
+
+El archivo principal de tu proyecto será algo como main.c, donde escribirás tu código.
+Usa Makefile para compilar tu proyecto con el comando make.
+Aprender la API de GBA:
+
+La GBA tiene una pantalla de 240x160 píxeles y soporta modos gráficos básicos. Empieza aprendiendo cómo dibujar píxeles, tiles o sprites usando la memoria de video (VRAM).
+Los recursos clave para gráficos y sonido estarán en áreas específicas de memoria:
+VRAM para gráficos.
+OAM (Object Attribute Memory) para sprites.
+Paletas de color.
+
+
+3. Usar herramientas para crear gráficos y sonido
+Para un juego arcade, probablemente necesitarás trabajar con sprites, fondos y música. Aquí te dejo herramientas específicas:
+
+Gráficos:
+ASEprite: Para crear y animar sprites pixelados.
+GBA Graphics Tools: Herramientas como gbafix y grit (incluidas en DevKitPro) te ayudan a convertir imágenes a formatos compatibles con la GBA.
+Sonido:
+GBA Sound Format: Usa archivos .wav o .mod y conviértelos con herramientas como GoldWave o Audacity.
+Maxmod: Una librería incluida en DevKitPro para gestionar música y efectos de sonido.
+
+
+4. Aprender los fundamentos de la GBA
+Para que tu juego funcione, necesitas entender algunos conceptos clave del hardware de la GBA:
+
+Modos gráficos:
+Modo 0: Soporta múltiples capas de tiles.
+Modo 3: Una sola capa de 240x160 píxeles en modo bitmap (ideal para fondos simples).
+Modo 4: Similar al modo 3, pero con una paleta de 256 colores.
+Controles:
+Usa los registros de entrada de la GBA para leer los botones del jugador (A, B, Start, etc.).
+FPS y lógica del juego:
+La GBA corre a 60 FPS, pero puedes controlar la velocidad usando interrupciones (VBlank) para sincronizar tus gráficos con la pantalla.
+
+
+5. Probar en emulador y en hardware real
+mGBA: Un emulador confiable para depuración.
+Si quieres probarlo en hardware real, usa un flashcart como EZ-Flash Omega para cargar tu juego en una consola GBA real.
+
+
+6. Recursos para aprender y comunidad
+Libros y tutoriales:
+TONC: Un excelente manual gratuito para aprender desarrollo en GBA.
+Foros y Discord:
+Únete a comunidades como gbadev.org o busca grupos de Discord dedicados al desarrollo de GBA.
+Flujo sugerido de trabajo en Windows:
+Instala DevKitPro.
+Usa VS Code como tu editor.
+Configura un proyecto base con Makefile.
+Escribe el código en C.
+Compila con make y prueba el ROM en mGBA.
+Itera hasta que tu juego esté completo.
+Si necesitas ayuda específica, ¡puedo guiarte con ejemplos concretos o ayudarte a configurar tu entorno! 😊
+
+
+
+- CONVERTIR LOS SPRITES CON GRIT -
+Usa grit para convertir sprites.png en tiles y paletas. Abre una terminal en el directorio donde tienes el archivo y ejecuta el siguiente comando:
+
+bash
+Copiar
+Editar
+grit sprites.png -gt -gB8 -gT -m! -ftc
+¿Qué significan las opciones?
+-gt: Convierte la imagen en tiles de 8x8 píxeles.
+-gB8: Usa 8 bits por píxel (256 colores).
+Si prefieres 16 colores (más eficiente para memoria), usa -gB4.
+-gT: Genera transparencia basada en el primer color (útil si hay un fondo).
+-m!: No genera mapas, porque no los necesitas para sprites.
+-ftc: Genera archivos en C (.c y .h) que puedes incluir directamente en tu proyecto.
+Esto generará los siguientes archivos:
+
+sprites.c: Contiene los datos de los tiles.
+sprites.h: Contiene la definición de las variables.
+sprites.pal: Contiene la paleta.
+
+EJEMPLO DE CODIGO USO DE SPRITES
+
+#include <gba.h>
+#include "sprites.h"
+
+int main() {
+    // Configurar modo gráfico
+    REG_DISPCNT = MODE_0 | OBJ_ENABLE | OBJ_MAP_1D;
+
+    // Cargar la paleta de colores
+    memcpy(SPRITE_PALETTE, spritesPal, spritesPalLen);
+
+    // Cargar los tiles de los sprites
+    memcpy(&TILE_MEM[4][0], spritesTiles, spritesTilesLen);
+
+    // Configurar un sprite (ejemplo)
+    OAM[0].attr0 = ATTR0_SQUARE;           // Sprite cuadrado
+    OAM[0].attr1 = ATTR1_SIZE_16;          // Tamaño 16x16
+    OAM[0].attr2 = 0;                      // Índice de los tiles en memoria
+
+    while (1) {
+        VBlankIntrWait(); // Esperar sincronización vertical
+    }
+    return 0;
+}
+
+
+MODOS GRÁFICOS GBA
+Modos Gráficos de la GBA
+La GBA tiene 5 modos gráficos, que varían en cuanto a la cantidad de objetos que se pueden mostrar, la resolución, y el tipo de gráficos que soportan. Estos modos se controlan mediante el registro DISPCNT (Display Control Register), que se utiliza para seleccionar el modo de visualización y configurar diferentes aspectos de la pantalla.
+
+MODO 0: Modo de gráficos 2D básico (Modo de fondo)
+Resolución: 240x160 píxeles.
+Características: Este es el modo más básico y flexible. Utiliza una pantalla de píxeles de 15 bits (RGB 5-5-5) para mostrar imágenes 2D.
+Fondos: Permite hasta 4 fondos diferentes, que pueden ser desplazables (scrolling) de forma horizontal y vertical. Cada fondo puede ser de tipo textura (con tiles) o gráfico plano.
+Objetos (Sprites): Puedes usar objetos para colocar sprites encima de los fondos, pero no se usan en este modo de forma compleja.
+Este modo es ideal para juegos que utilizan tiles para crear fondos, como en juegos de plataformas o aventuras.
+
+Ejemplo de uso:
+
+Ideal para mostrar un fondo estático o un fondo desplazable (scrolling), como en juegos de plataformas, donde el personaje se mueve en un mundo con fondo estático o desplazable.
+
+
+MODO 1: Modo de gráficos 2D (Modo de fondo) con más detalles
+Resolución: 240x160 píxeles.
+Características: Similar al Modo 0, pero con una mayor capacidad para el control de las capas de fondos, lo que permite un nivel de detalle mayor en los gráficos. Utiliza un mayor nivel de profundidad de color y es más adecuado para mapas de tiles más grandes.
+Fondos: Permite hasta 2 fondos de tipo gráfico plano (por ejemplo, juegos con niveles que se construyen con bloques o tiles).
+Este modo es útil para juegos donde se necesitan varios fondos o capas, como juegos de scroll paraláctico en 2D.
+
+MODO 2: Modo de gráficos 2D con fondo plano
+Resolución: 240x160 píxeles.
+Características: Se utiliza para gráficos más avanzados y en 2D con capas de fondo más complejas, cada fondo puede ser representado por un solo bloque de memoria.
+Objetos (Sprites): Este modo admite hasta 128 sprites por pantalla, lo que permite usar muchos más elementos visuales.
+Ejemplo de uso:
+
+Ideal para juegos de lucha o para aventuras con muchos elementos interactivos, que requieren que se gestionen diferentes tipos de fondos.
+
+MODO 3: Modo de gráficos 3D (Pixel por píxel)
+Resolución: 240x160 píxeles, pero a 256 colores de profundidad (lo que genera gráficos con calidad superior).
+Objetos: Esto es útil para gráficos más complejos que requieren mucho más poder para generar más tipos de objetos de calidad.
+
+MODO 4: Modo 3D (Modo de gráficos "texturizados")
+Resolución: 240x160 píxeles, usando una paleta de 15 bits de color (RGB 5-5-5).
+Características: Este modo es utilizado principalmente para gráficos 3D, y soporta texturización. Es un modo con una resolución de gráficos más alta, en el que puedes utilizar texturas de 8 bits (256 colores) o de 16 bits (65536 colores) en mapas de texturas.
+Objetos (Sprites): El número de objetos que se pueden gestionar aumenta considerablemente en comparación con los otros modos. Los objetos 3D pueden ser procesados y dibujados con sus texturas aplicadas.
+Ideal para:
+
+Juegos en 3D como los que usan entornos más complejos y requieren un control más detallado sobre la disposición de objetos en un espacio tridimensional. Ejemplo: juegos con perspectivas en 3D, como en el caso de las primeras adaptaciones de juegos de carreras o shooters en 3D.
+
+
+MODO 5: Modo de gráficos 3D avanzado
+Resolución: 240x160 píxeles.
+Características: El Modo 5 es una extensión avanzada del Modo 4. Este permite una mayor capacidad de control sobre los gráficos 3D, con la capacidad de manejar más polígonos y ofrecer un renderizado más avanzado.
+Este modo está pensado para aplicaciones gráficas que usan gráficos 3D de alta complejidad o que requieren un rendimiento avanzado en términos de procesamiento de gráficos.
+
+
+
+Registro REG_DISPCNT
+El REG_DISPCNT es el registro de control de la pantalla. Se utiliza para configurar la visualización de la pantalla, 
+el modo gráfico, la habilitación de los fondos y los sprites, entre otras cosas. Este registro es de 16 bits y su formato es el siguiente:
+
++-----------------+-------------------+
+| Bits 15-12      | Bits 11-10         |
+| Modo Gráfico    | Fondo Habilitado   |
++-----------------+-------------------+
+| Bits 9-8        | Otros controles    |
+| -               | -                  |
++-----------------+-------------------+
+
+Opciones del REG_DISPCNT:
+A continuación, te detallo las opciones principales para configurar este registro:
+
+1. Modo Gráfico (Bits 0-3)
+Los primeros 4 bits (0-3) definen el modo gráfico. Cada modo configura cómo se mostrarán los gráficos y 
+qué capacidades tienen los fondos y los objetos (sprites). Estos modos definen la estructura y tipo de visualización en pantalla.
+
+MODE_0 (0x00): Fondo 2D básico, tilemap de 8x8 píxeles.
+MODE_1 (0x01): Fondo 2D con gráficos de 16x16 píxeles.
+MODE_2 (0x02): Fondo 2D con gráficos de 16x16 píxeles, con más opciones de visualización.
+MODE_3 (0x03): Fondo 2D con gráficos en color de 16 bits (RGB 5-6-5). Es uno de los modos más comunes para gráficos más complejos.
+MODE_4 (0x04): Fondo 2D con gráficos en 16 bits, se usa para gráficos con mayor profundidad de color.
+MODE_5 (0x05): Fondo 2D con gráficos 3D o mayor complejidad.
+
+Ejemplo para configurar el Modo 3:
+REG_DISPCNT = MODE_3;  // Configura el Modo 3
+
+2. Habilitar Fondos (Bits 4-7)
+Estos bits habilitan los diferentes fondos (BG0, BG1, BG2, BG3). En general, se pueden habilitar hasta 4 fondos simultáneamente.
+
+BG0_ENABLE (Bit 4): Habilita el fondo 0.
+BG1_ENABLE (Bit 5): Habilita el fondo 1.
+BG2_ENABLE (Bit 6): Habilita el fondo 2.
+BG3_ENABLE (Bit 7): Habilita el fondo 3.
+Puedes habilitar varios fondos a la vez utilizando el operador OR (|).
+
+Ejemplo:
+
+REG_DISPCNT = MODE_3 | BG0_ENABLE | BG2_ENABLE;  // Configura el Modo 3 y habilita los fondos 0 y 2
+
+
+3. Habilitar Objetos (Sprites) (Bit 8)
+OBJ_ENABLE (Bit 8): Habilita la visualización de los objetos (sprites) en la pantalla. Los objetos (sprites) 
+son pequeños gráficos que puedes mover independientemente de los fondos.
+Ejemplo:
+
+REG_DISPCNT = MODE_3 | BG0_ENABLE | OBJ_ENABLE;  // Configura el Modo 3, habilita el fondo 0 y los objetos
+
+4. Rotación de Pantalla (Bit 9)
+SCREEN_ROTATE (Bit 9): Activa la rotación de la pantalla. Si se habilita, los fondos y objetos se rotan en el espacio 2D.
+Ejemplo para habilitar la rotación:
+
+REG_DISPCNT = MODE_3 | SCREEN_ROTATE;  // Configura el Modo 3 y habilita la rotación de la pantalla
+
+5. Modo de Objetos (Bit 10)
+OBJ_2D (Bit 10): Configura la visualización de los objetos en 2D.
+
+6. Otros Bits (Bits 11-15)
+Hay otros bits que se utilizan para opciones avanzadas que no se usan tanto en todos los juegos:
+
+BG2_priority (Bit 12): Determina la prioridad del fondo 2 (BG2).
+BG3_priority (Bit 13): Determina la prioridad del fondo 3 (BG3).
+Ejemplo de Configuración Completa:
+
+// Configura la pantalla en Modo 3 (gráficos 16-bit), habilita el fondo 0, el fondo 2 y los objetos
+REG_DISPCNT = MODE_3 | BG0_ENABLE | BG2_ENABLE | OBJ_ENABLE;
+Esto establece:
+
+Modo 3: Gráficos en 16 bits.
+Fondo 0: Habilitado.
+Fondo 2: Habilitado.
+Objetos (sprites): Habilitados.
+Resumen de los Bits Importantes de REG_DISPCNT:
+Modo gráfico (Bits 0-3): Define el tipo de gráficos que usarás.
+Habilitar fondos (Bits 4-7): Activa los fondos BG0, BG1, BG2, BG3.
+Habilitar objetos (Bit 8): Activa la visualización de los sprites.
+Rotación de pantalla (Bit 9): Activa la rotación de la pantalla.
+Otros controles (Bits 10-15): Configuración avanzada (prioridad de fondos, etc.).
+
+Conclusión
+
+Con REG_DISPCNT puedes configurar cómo se mostrarán los gráficos 
+en la pantalla de la GBA. Dependiendo del modo gráfico y qué fondos y objetos habilites, 
+podrás crear diferentes tipos de visualizaciones, desde juegos de desplazamiento sencillo
+hasta juegos con gráficos complejos y efectos especiales.
